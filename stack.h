@@ -12,20 +12,22 @@
 #define POISON_VALUE 2147483647
 
 #define ASSERT_OK(stack) {\
-    if (!verifyStack(stack)) {\
+    int errorCode = verifyStack(stack);\
+    \
+    if (errorCode) {\
         FILE *file = fopen("log.txt", "a");\
-        DUMP(stack, file);\
+        DUMP(stack, file, errorCode);\
         fclose(file);\
     }\
 }\
 
-#define DUMP(stack, file) {\
-    fprintf(file, "\nASSERTION FAILED\n");\
+#define DUMP(stack, file, errCode) {\
+    fprintf(file, "\nASSERTION FAILED with error code: %d\n", errCode);\
     fprintf(file, "TIMESTAMP: %lus\n", (unsigned long)time(NULL));\
     fprintf(file, "in %s at %s(%d)\n", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__);\
     \
-    if (stack)  {\
-        fprintf(file, "Stack_t[%p]\n{\n", &stack);\
+    if (stack && errCode != STACK_NULL)  {\
+        fprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", &stack, stack->name, stack->createFunc, stack->createFile, stack->createLine);\
         fprintf(file, "\tsize = %lu\n", stack->size);\
         fprintf(file, "\tcapacity = %lu\n", stack->capacity);\
         \
@@ -45,6 +47,8 @@
     else fprintf(file, "Stack[0x00000000] - NULLPTR");\
 }\
 
+const double resizeCoefficient = 1.61; //http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html https://github.com/facebook/folly/blob/main/folly/docs/FBVector.md
+
 /**
  *
  * Stack itself
@@ -58,17 +62,20 @@ struct Stack_t {
     size_t size = 0;
     size_t capacity = 0;
 
-    const char *breakFunc = {};
-    const char *breakFile = {};
-    int breakLine = 0;
+    const char *createFunc = {};
+    const char *createFile = {};
+    const char *name = {};
+    int createLine = 0;
 };
 
 enum ErrorCodes {
     OK                          =  0,
     UNABLE_TO_ALLOCATE_MEMORY   = -1,
-    NULL_POINTER                = -2,
+    DATA_NULL                   = -2,
     INVALID_CAPACITY            = -3,
     SIZE_BIGGER_CAPACITY        = -4,
+    STACK_NULL                  = -5,
+    INVALID_SIZE                = -6,
 };
 
 /**
@@ -79,7 +86,17 @@ enum ErrorCodes {
  * @param capacity - wanted capacity of stack
  * @param err - pointer to int where error code is saved
  **/
-void stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
+void _stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
+
+#define stackCtor(stack, ...) {\
+    if (stack) {\
+        (stack)->createFunc = __PRETTY_FUNCTION__;\
+        (stack)->createFile = __FILE_NAME__;\
+        (stack)->createLine = __LINE__;\
+        (stack)->name = #stack;\
+    }\
+    _stackCtor(stack, ##__VA_ARGS__);\
+}\
 
 /**
  *
@@ -102,14 +119,11 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err = nullptr);
  **/
 Elem_t stackPop(Stack_t *stack, int *err = nullptr);
 
-/**
- *
- * Prints error to file by error code
- *
- * @param file - pointer to file
- * @param errCode - code of error
- **/
-void printError(FILE *file, int errCode);
+void stackResize(Stack_t *stack, size_t size, int *err = nullptr);
+
+void stackShrinkToFit(Stack_t *stack, int *err = nullptr);
+
+void stackDtor(Stack_t *stack, int *err = nullptr);
 
 int verifyStack(Stack_t *stack);
 

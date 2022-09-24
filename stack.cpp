@@ -1,9 +1,9 @@
 #include "stack.h"
 
-void stackCtor(Stack_t *stack, size_t capacity, int *err) {
+void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
-        *err = NULL_POINTER;
+        *err = STACK_NULL;
         return;
     }
     if (capacity < 1 && err) {
@@ -24,7 +24,7 @@ void stackCtor(Stack_t *stack, size_t capacity, int *err) {
 void stackPush(Stack_t *stack, Elem_t elem, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
-        *err = NULL_POINTER;
+        *err = STACK_NULL;
         return;
     }
 
@@ -33,22 +33,70 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
     stack->data[stack->size] = elem;
     stack->size++;
 
-    ASSERT_OK(stack);
+    if (stack->size >= stack->capacity - 1) {
+        size_t coef = (size_t)ceil(stack->size * resizeCoefficient);
+        stackResize(stack, coef, err);
+    }
 }
 
 Elem_t stackPop(Stack_t *stack, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
-        *err = NULL_POINTER;
+        *err = STACK_NULL;
         return POISON_VALUE;
     }
     ASSERT_OK(stack);
 
     stack->size--;
     Elem_t value = stack->data[stack->size];
-    stack->data[stack->size] = 0;
+    stack->data[stack->size] = POISON_VALUE;
 
-    ASSERT_OK(stack);
+    size_t toLower = (size_t)(floor(stack->capacity / (resizeCoefficient * resizeCoefficient)));
+    if (stack->size < toLower) {
+        stackResize(stack, (size_t)floor(stack->capacity / resizeCoefficient), err);
+    }
+
+    //DUMP(stack, fff, OK);
 
     return value;
+}
+
+void stackResize(Stack_t *stack, size_t size, int *err) {
+    if (err) *err = OK;
+    if (!stack && err) {
+        *err = STACK_NULL;
+        return;
+    }
+    ASSERT_OK(stack);
+
+    stack->data = (Elem_t *) realloc(stack->data, sizeof(Elem_t) * (size + 1));
+    stack->capacity = size + 1;
+    if (!stack->data) *err = UNABLE_TO_ALLOCATE_MEMORY;
+
+    ASSERT_OK(stack);
+}
+
+void stackShrinkToFit(Stack_t *stack, int *err) {
+    stackResize(stack, stack->size, err);
+}
+
+void stackDtor(Stack_t *stack, int *err) {
+    if (err) *err = OK;
+    if (!stack && err) {
+        *err = STACK_NULL;
+        return;
+    }
+    ASSERT_OK(stack);
+
+    if (stack->data) {
+        free(stack->data);
+    }
+
+    stack->size = 0;
+    stack->capacity = 0;
+
+    stack->createFunc = {};
+    stack->createFile = {};
+    stack->name = {};
+    stack->createLine = 0;
 }
