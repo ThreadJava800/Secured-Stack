@@ -34,7 +34,7 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
     stack->size++;
 
     if (stack->size >= stack->capacity - 1) {
-        size_t coef = (size_t)ceil(stack->size * resizeCoefficient);
+        size_t coef = (size_t)ceil((double)stack->size * resizeCoefficient);
         stackResize(stack, coef, err);
     }
 }
@@ -45,18 +45,20 @@ Elem_t stackPop(Stack_t *stack, int *err) {
         *err = STACK_NULL;
         return POISON_VALUE;
     }
+    if (stack->size == 0) {
+        if (err) *err = STACK_EMPTY;
+        return POISON_VALUE;
+    }
     ASSERT_OK(stack);
 
     stack->size--;
     Elem_t value = stack->data[stack->size];
     stack->data[stack->size] = POISON_VALUE;
 
-    size_t toLower = (size_t)(floor(stack->capacity / (resizeCoefficient * resizeCoefficient)));
+    size_t toLower = (size_t)(floor((double)stack->capacity / (resizeCoefficient * resizeCoefficient)));
     if (stack->size < toLower) {
-        stackResize(stack, (size_t)floor(stack->capacity / resizeCoefficient), err);
+        stackResize(stack, (size_t)floor((double)stack->capacity / resizeCoefficient), err);
     }
-
-    //DUMP(stack, fff, OK);
 
     return value;
 }

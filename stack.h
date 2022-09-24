@@ -9,13 +9,14 @@
 
 #define Elem_t int
 #define MAX_DEB_LINE 4096
-#define POISON_VALUE 2147483647
+#define POISON_VALUE 2147483646
 
 #define ASSERT_OK(stack) {\
     int errorCode = verifyStack(stack);\
     \
     if (errorCode) {\
         FILE *file = fopen("log.txt", "a");\
+        if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
         DUMP(stack, file, errorCode);\
         fclose(file);\
     }\
@@ -27,15 +28,15 @@
     fprintf(file, "in %s at %s(%d)\n", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__);\
     \
     if (stack && errCode != STACK_NULL)  {\
-        fprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", &stack, stack->name, stack->createFunc, stack->createFile, stack->createLine);\
-        fprintf(file, "\tsize = %lu\n", stack->size);\
-        fprintf(file, "\tcapacity = %lu\n", stack->capacity);\
+        fprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", stack, (stack)->name, (stack)->createFunc, (stack)->createFile, (stack)->createLine);\
+        fprintf(file, "\tsize = %lu\n", (stack)->size);\
+        fprintf(file, "\tcapacity = %lu\n", (stack)->capacity);\
         \
-        if (stack->data) {\
-            fprintf(file, "\tdata[%p]\n\t{\n", &stack->data);\
+        if ((stack)->data) {\
+            fprintf(file, "\tdata[%p]\n\t{\n", &(stack)->data);\
             \
-            for (size_t i = 0; i < stack->size; i++) {\
-                Elem_t dumpValue = stack->data[i];\
+            for (size_t i = 0; i < (stack)->size; i++) {\
+                Elem_t dumpValue = (stack)->data[i];\
                 if (dumpValue != POISON_VALUE) fprintf(file, "\t\t*[%lu] = %d\n", i, dumpValue);\
                 else fprintf(file, "\t\t[%lu] = %d\n", i, POISON_VALUE);\
             }\
@@ -47,7 +48,14 @@
     else fprintf(file, "Stack[0x00000000] - NULLPTR");\
 }\
 
-const double resizeCoefficient = 1.61; //http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html https://github.com/facebook/folly/blob/main/folly/docs/FBVector.md
+/**
+ *
+ * I use this coefficient to resize stack when needed.
+ * I used this link while searching info:
+ * http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html
+ *
+ **/
+const double resizeCoefficient = 1.61;
 
 /**
  *
@@ -68,6 +76,11 @@ struct Stack_t {
     int createLine = 0;
 };
 
+/**
+ *
+ * Error codes returned from functions
+ *
+**/
 enum ErrorCodes {
     OK                          =  0,
     UNABLE_TO_ALLOCATE_MEMORY   = -1,
@@ -76,6 +89,7 @@ enum ErrorCodes {
     SIZE_BIGGER_CAPACITY        = -4,
     STACK_NULL                  = -5,
     INVALID_SIZE                = -6,
+    STACK_EMPTY                 = -7,
 };
 
 /**
@@ -88,6 +102,11 @@ enum ErrorCodes {
  **/
 void _stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
 
+/**
+ *
+ * Interlayer between main and _stackCtor, used for debug to get variable name
+ *
+ **/
 #define stackCtor(stack, ...) {\
     if (stack) {\
         (stack)->createFunc = __PRETTY_FUNCTION__;\
@@ -119,12 +138,43 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err = nullptr);
  **/
 Elem_t stackPop(Stack_t *stack, int *err = nullptr);
 
+/**
+ *
+ * Resizes stack
+ *
+ * @param stack - pointer to stack to resize
+ * @param size - new size of stack
+ * @param err - pointer to int where error code is saved
+ **/
 void stackResize(Stack_t *stack, size_t size, int *err = nullptr);
 
+/**
+ *
+ * Resizes stack to its actual size
+ *
+ * @param stack - pointer to stack to resize
+ * @param err - pointer to int where error code is saved
+ **/
 void stackShrinkToFit(Stack_t *stack, int *err = nullptr);
 
+/**
+ *
+ * Kills stack: frees all allocated memory, nulls all arguments
+ *
+ * @param stack - pointer to stack to kill
+ * @param err - pointer to int where error code is saved
+ **/
 void stackDtor(Stack_t *stack, int *err = nullptr);
 
+/**
+ *
+ * Checks stack and returns OK(0) if stack is ok.
+ * Else returns errorCode (from -1 to ... -inf)
+ *
+ * @param stack - pointer to stack to check
+ *
+ * @return int - errorCode
+ **/
 int verifyStack(Stack_t *stack);
 
 #endif
