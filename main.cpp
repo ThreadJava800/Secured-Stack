@@ -5,16 +5,16 @@
 
 int main(void) {
     Stack_t stack = {};
-    stackCtor(&stack, 5);
+    stackCtor(&stack, 6);
 
     stackPush(&stack, 5);
     stackPush(&stack, 6);
     stackPush(&stack, 7);
     stackPush(&stack, 10);
 
-    printf("\n%d", stackPop(&stack));
-    printf("\n%d", stackPop(&stack));
-    printf("\n%d", stackPop(&stack));
+    printf("%d\n", stackPop(&stack));
+    printf("%d\n", stackPop(&stack));
+    printf("%d\n", stackPop(&stack));
 
     free(stack.data);
 

@@ -1,0 +1,211 @@
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackCtor(Stack_t*, size_t, int*) at stack.cpp(20)
+Stack_t[0x7ffccb411a50]
+{
+	size = 0
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(31)
+Stack_t[0x7ffccb411a50]
+{
+	size = 0
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(36)
+Stack_t[0x7ffccb411a50]
+{
+	size = 1
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(31)
+Stack_t[0x7ffccb411a50]
+{
+	size = 1
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(36)
+Stack_t[0x7ffccb411a50]
+{
+	size = 2
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(31)
+Stack_t[0x7ffccb411a50]
+{
+	size = 2
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(36)
+Stack_t[0x7ffccb411a50]
+{
+	size = 3
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(31)
+Stack_t[0x7ffccb411a50]
+{
+	size = 3
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in void stackPush(Stack_t*, int, int*) at stack.cpp(36)
+Stack_t[0x7ffccb411a50]
+{
+	size = 4
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+		*[3] = 10
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(45)
+Stack_t[0x7ffccb411a50]
+{
+	size = 4
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+		*[3] = 10
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(51)
+Stack_t[0x7ffccb411a50]
+{
+	size = 3
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(45)
+Stack_t[0x7ffccb411a50]
+{
+	size = 3
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+		*[2] = 7
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(51)
+Stack_t[0x7ffccb411a50]
+{
+	size = 2
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(45)
+Stack_t[0x7ffccb411a50]
+{
+	size = 2
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+		*[1] = 6
+	}
+}
+
+ASSERTION FAILED
+TIMESTAMP: 1664027996s
+in int stackPop(Stack_t*, int*) at stack.cpp(51)
+Stack_t[0x7ffccb411a50]
+{
+	size = 1
+	capacity = 6
+	data[0x7ffccb411ae0]
+	{
+		*[0] = 5
+	}
+}
