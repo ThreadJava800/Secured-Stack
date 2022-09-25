@@ -1,6 +1,5 @@
 #include "stack.h"
 
-
 int main(void) {
     Stack_t stack = {};
     stackCtor(&stack, 1, nullptr);

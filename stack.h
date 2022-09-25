@@ -177,4 +177,16 @@ void stackDtor(Stack_t *stack, int *err = nullptr);
  **/
 int verifyStack(Stack_t *stack);
 
+/**
+ *
+ * Reallocates memory and sets all new values to 0
+ *
+ * @param ptr - pointer to object to realloc
+ * @param size - new size to realloc
+ * @param err - pointer to int where error code is saved
+ *
+ * @return void * - pointer to new reallocated memory
+ **/
+void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err = nullptr);
+
 #endif

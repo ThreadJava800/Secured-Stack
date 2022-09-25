@@ -71,7 +71,7 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     }
     ASSERT_OK(stack);
 
-    stack->data = (Elem_t *) realloc(stack->data, sizeof(Elem_t) * (size + 1));
+    stack->data = (Elem_t *) recalloc(stack->data, size + 1, sizeof(Elem_t), stack->size);
     stack->capacity = size + 1;
     if (!stack->data) *err = UNABLE_TO_ALLOCATE_MEMORY;
 
@@ -92,6 +92,7 @@ void stackDtor(Stack_t *stack, int *err) {
 
     if (stack->data) {
         free(stack->data);
+        stack->data = nullptr;
     }
 
     stack->size = 0;
@@ -101,4 +102,28 @@ void stackDtor(Stack_t *stack, int *err) {
     stack->createFile = {};
     stack->name = {};
     stack->createLine = 0;
+}
+
+void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err) {
+    if (err) *err = OK;
+    if (!ptr) {
+        return calloc(amount, elemSize);
+    }
+
+    char *newPtr = (char *) realloc(ptr, amount * elemSize);
+
+    if (!newPtr && err) {
+        *err = UNABLE_TO_ALLOCATE_MEMORY;
+        return ptr;
+    }
+
+    if (currentAmount < amount) {
+        for (size_t i = currentAmount; i < amount; i++) {
+            newPtr[i * elemSize] = 0;
+        }
+    }
+
+    ptr = newPtr;
+
+    return ptr;
 }
