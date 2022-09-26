@@ -54,7 +54,7 @@ void testResize() {
 
         size_t waited = 0;
         if (stack.size == stack.capacity - 1) {
-            waited = (size_t) ceil(stack.size * resizeCoefficient);
+            waited = (size_t) ceil(stack.size * RESIZE_COEFFICIENT);
         } else {
             waited = stack.capacity;
         }
@@ -68,8 +68,8 @@ void testResize() {
     for(int i = 0; i < testCount; i++){
         stackPop(&stack);
         size_t waited = 0;
-        if (stack.size < (size_t)(floor(stack.capacity / (resizeCoefficient * resizeCoefficient)))) {
-            stack.size = (size_t)(floor(stack.capacity / resizeCoefficient));
+        if (stack.size < (size_t)(floor(stack.capacity / (RESIZE_COEFFICIENT * RESIZE_COEFFICIENT)))) {
+            stack.size = (size_t)(floor(stack.capacity / RESIZE_COEFFICIENT));
         } else {
             waited = stack.capacity;
         }

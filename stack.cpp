@@ -1,5 +1,18 @@
 #include "stack.h"
 
+void canaryData(Elem_t **data, size_t capacity, int *err) {
+    if (err) *err = OK;
+    if (!data && err) *err = DATA_NULL;
+    if (!*data && err) *err = DATA_NULL;
+
+    char *temp = (char *) *data;
+    *data = (Elem_t*) memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
+    *data += sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+
+    temp += capacity * sizeof(Elem_t) + sizeof(CANARY_CONSTANT);
+    memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
+}
+
 void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
@@ -11,11 +24,15 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
         return;
     }
 
-    stack->data = (Elem_t *) calloc(capacity, sizeof(Elem_t));
+    stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity + 2 * sizeof(CANARY_CONSTANT));
     stack->size = 0;
     stack->capacity = capacity;
 
-    if (!stack->data && err) *err = UNABLE_TO_ALLOCATE_MEMORY;
+    if (!stack->data) {
+        if (err) *err = UNABLE_TO_ALLOCATE_MEMORY;
+    } else {
+        canaryData(&stack->data, capacity, err);
+    }
 
     ASSERT_OK(stack);
 }
@@ -73,8 +90,12 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     }
     ASSERT_OK(stack);
 
-    stack->data = (Elem_t *) recalloc(stack->data, size + 1, sizeof(Elem_t), stack->size);
+    stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+    stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT), stack->size);
     stack->capacity = size + 1;
+
+    canaryData(&stack->data, stack->capacity, err);
+
     if (!stack->data) *err = UNABLE_TO_ALLOCATE_MEMORY;
 
     ASSERT_OK(stack);
@@ -93,6 +114,7 @@ void stackDtor(Stack_t *stack, int *err) {
     ASSERT_OK(stack);
 
     if (stack->data) {
+        stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
         free(stack->data);
         stack->data = nullptr;
     }
