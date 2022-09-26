@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
@@ -28,6 +29,8 @@ const Elem_t POISON_VALUE = 2147483646;
  **/
 const double RESIZE_COEFFICIENT = 1.61;
 
+const size_t CANARY_CONSTANT = 8350650019957897075;
+
 #define ASSERT_OK(stack) {\
     int errorCode = verifyStack(stack);\
     \
@@ -52,17 +55,21 @@ const double RESIZE_COEFFICIENT = 1.61;
         if ((stack)->data) {\
             fprintf(file, "\tdata[%p]\n\t{\n", &(stack)->data);\
             \
+            fprintf(file, "\t\t%d\n", (stack)->data[-1]);\
             for (size_t i = 0; i < (stack)->size; i++) {\
                 Elem_t dumpValue = (stack)->data[i];\
                 if (dumpValue != POISON_VALUE) fprintf(file, "\t\t*[%lu] = %d\n", i, dumpValue);\
                 else fprintf(file, "\t\t[%lu] = %d\n", i, POISON_VALUE);\
             }\
+            fprintf(file, "\t\t%d\n", (stack)->data[(stack)->capacity]);\
             \
             fprintf(file, "\t}\n}\n");\
         }\
         else fprintf(file, "data[0x00000000] - NULLPTR\n");\
     }\
     else fprintf(file, "Stack[0x00000000] - NULLPTR");\
+    \
+    fflush(file);\
 }\
 
 /**
@@ -74,6 +81,8 @@ const double RESIZE_COEFFICIENT = 1.61;
  * @param capacity - all of capacity available to data
 **/
 struct Stack_t {
+    size_t stackCanary1 = CANARY_CONSTANT;
+
     Elem_t *data = {};
     size_t size = 0;
     size_t capacity = 0;
@@ -82,6 +91,8 @@ struct Stack_t {
     const char *createFile = {};
     const char *name = {};
     int createLine = 0;
+
+    size_t stackCanary2 = CANARY_CONSTANT;
 };
 
 /**
@@ -98,7 +109,11 @@ enum ErrorCodes {
     STACK_NULL                  = -5,
     INVALID_SIZE                = -6,
     STACK_EMPTY                 = -7,
+    STACK_CANARY_BROKEN         = -8,
+    BUFFER_CANARY_BROKEN        = -9,
 };
+
+void canaryData(Elem_t **data, size_t capacity, int *err = nullptr);
 
 /**
  *
@@ -173,6 +188,8 @@ void stackShrinkToFit(Stack_t *stack, int *err = nullptr);
  * @param err - pointer to int where error code is saved
  **/
 void stackDtor(Stack_t *stack, int *err = nullptr);
+
+int proveCanary(Elem_t *data, size_t capacity);
 
 /**
  *
