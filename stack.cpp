@@ -13,6 +13,15 @@ void canaryData(Elem_t **data, size_t capacity, int *err) {
     memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
 }
 
+void updateHashes(Stack_t *stack, int *err) {
+    if (!stack && err) *err = STACK_NULL;
+    if (!stack->data && err) *err = DATA_NULL;
+
+    stack->stackHash = 0;
+    stack->bufferHash = countHash(stack->data - sizeof(CANARY_CONSTANT) / sizeof(Elem_t), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
+    stack->stackHash = countHash(stack, sizeof(Stack_t));
+}
+
 void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
@@ -34,6 +43,8 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
         canaryData(&stack->data, capacity, err);
     }
 
+    updateHashes(stack, err);
+
     ASSERT_OK(stack);
 }
 
@@ -49,6 +60,8 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
 
     stack->data[stack->size] = elem;
     stack->size++;
+
+    updateHashes(stack, err);
 
     if (stack->size >= stack->capacity - 1) {
         size_t coef = (size_t)ceil((double)stack->size * RESIZE_COEFFICIENT);
@@ -73,11 +86,12 @@ Elem_t stackPop(Stack_t *stack, int *err) {
     stack->data[stack->size] = POISON_VALUE;
 
     size_t toLower = (size_t)(floor((double)stack->capacity / (RESIZE_COEFFICIENT * RESIZE_COEFFICIENT)));
+
+    updateHashes(stack, err);
+
     if (stack->size < toLower) {
         stackResize(stack, (size_t)floor((double)stack->capacity / RESIZE_COEFFICIENT), err);
     }
-
-    //DUMP(stack, stderr, OK);
 
     return value;
 }
@@ -98,6 +112,8 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
 
     if (!stack->data) *err = UNABLE_TO_ALLOCATE_MEMORY;
 
+    updateHashes(stack, err);
+    
     ASSERT_OK(stack);
 }
 
@@ -126,6 +142,9 @@ void stackDtor(Stack_t *stack, int *err) {
     stack->createFile = {};
     stack->name = {};
     stack->createLine = 0;
+
+    stack->stackHash = 0;
+    stack->bufferHash = 0;
 }
 
 void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err) {

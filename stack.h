@@ -92,6 +92,9 @@ struct Stack_t {
     const char *name = {};
     int createLine = 0;
 
+    size_t stackHash = 0;
+    size_t bufferHash = 0;
+
     size_t stackCanary2 = CANARY_CONSTANT;
 };
 
@@ -111,9 +114,13 @@ enum ErrorCodes {
     STACK_EMPTY                 = -7,
     STACK_CANARY_BROKEN         = -8,
     BUFFER_CANARY_BROKEN        = -9,
+    BUFFER_HASH_CHANGED         = -10,
+    STACK_HASH_CHANGED          = -11,
 };
 
 void canaryData(Elem_t **data, size_t capacity, int *err = nullptr);
+
+void updateHashes(Stack_t *stack, int *err = nullptr);
 
 /**
  *
@@ -190,6 +197,12 @@ void stackShrinkToFit(Stack_t *stack, int *err = nullptr);
 void stackDtor(Stack_t *stack, int *err = nullptr);
 
 int proveCanary(Elem_t *data, size_t capacity);
+
+size_t countHash(void *ptr, size_t size);
+
+int checkDataHash(Stack_t *stack);
+
+int checkStackHash(Stack_t *stack);
 
 /**
  *
