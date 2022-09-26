@@ -34,7 +34,7 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
     stack->size++;
 
     if (stack->size >= stack->capacity - 1) {
-        size_t coef = (size_t)ceil((double)stack->size * resizeCoefficient);
+        size_t coef = (size_t)ceil((double)stack->size * RESIZE_COEFFICIENT);
         stackResize(stack, coef, err);
     }
 }
@@ -55,10 +55,12 @@ Elem_t stackPop(Stack_t *stack, int *err) {
     Elem_t value = stack->data[stack->size];
     stack->data[stack->size] = POISON_VALUE;
 
-    size_t toLower = (size_t)(floor((double)stack->capacity / (resizeCoefficient * resizeCoefficient)));
+    size_t toLower = (size_t)(floor((double)stack->capacity / (RESIZE_COEFFICIENT * RESIZE_COEFFICIENT)));
     if (stack->size < toLower) {
-        stackResize(stack, (size_t)floor((double)stack->capacity / resizeCoefficient), err);
+        stackResize(stack, (size_t)floor((double)stack->capacity / RESIZE_COEFFICIENT), err);
     }
+
+    //DUMP(stack, stderr, OK);
 
     return value;
 }
@@ -112,8 +114,11 @@ void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, 
 
     char *newPtr = (char *) realloc(ptr, amount * elemSize);
 
-    if (!newPtr && err) {
-        *err = UNABLE_TO_ALLOCATE_MEMORY;
+    if (!newPtr) {
+        if (err) {
+            *err = UNABLE_TO_ALLOCATE_MEMORY;
+        }
+
         return ptr;
     }
 

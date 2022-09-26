@@ -2,14 +2,31 @@
 #define SECURED_STACK_H
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <math.h>
 #include <time.h>
 
-#define Elem_t int
-#define MAX_DEB_LINE 4096
-#define POISON_VALUE 2147483646
+typedef int Elem_t;
+
+/**
+ *
+ * I use this coefficient to resize stack when needed.
+ * I used this link while searching info:
+ * http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html
+ *
+ **/
+const Elem_t POISON_VALUE = 2147483646;
+
+/**
+ *
+ * I use this coefficient to resize stack when needed.
+ * I used this link while searching info:
+ * http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html
+ *
+ **/
+const double RESIZE_COEFFICIENT = 1.61;
 
 #define ASSERT_OK(stack) {\
     int errorCode = verifyStack(stack);\
@@ -47,15 +64,6 @@
     }\
     else fprintf(file, "Stack[0x00000000] - NULLPTR");\
 }\
-
-/**
- *
- * I use this coefficient to resize stack when needed.
- * I used this link while searching info:
- * http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html
- *
- **/
-const double resizeCoefficient = 1.61;
 
 /**
  *
