@@ -1,26 +1,36 @@
 #include "stack.h"
 
-void canaryData(Elem_t **data, size_t capacity, int *err) {
-    if (err) *err = OK;
-    if (!data && err) *err = DATA_NULL;
-    if (!*data && err) *err = DATA_NULL;
+#if CANARY_PROTECT
+    void canaryData(Elem_t **data, size_t capacity, int *err) {
+        if (err) *err = OK;
+        if (!data && err) *err = DATA_NULL;
+        if (!*data && err) *err = DATA_NULL;
 
-    char *temp = (char *) *data;
-    *data = (Elem_t*) memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
-    *data += sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        char *temp = (char *) *data;
+        *data = (Elem_t*) memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
+        *data += sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
 
-    temp += capacity * sizeof(Elem_t) + sizeof(CANARY_CONSTANT);
-    memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
-}
+        temp += capacity * sizeof(Elem_t) + sizeof(CANARY_CONSTANT);
+        memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
+    }
+#endif
 
-void updateHashes(Stack_t *stack, int *err) {
-    if (!stack && err) *err = STACK_NULL;
-    if (!stack->data && err) *err = DATA_NULL;
+#if HASH_PROTECT
+    void updateHashes(Stack_t *stack, int *err) {
+        if (!stack && err) *err = STACK_NULL;
+        if (!stack->data && err) *err = DATA_NULL;
 
-    stack->stackHash = 0;
-    stack->bufferHash = countHash(stack->data - sizeof(CANARY_CONSTANT) / sizeof(Elem_t), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
-    stack->stackHash = countHash(stack, sizeof(Stack_t));
-}
+        stack->stackHash = 0;
+
+        #if CANARY_PROTECT
+            stack->bufferHash = countHash(stack->data - sizeof(CANARY_CONSTANT) / sizeof(Elem_t), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
+        #else
+            stack->bufferHash = countHash(stack->data, stack->capacity * sizeof(Elem_t));
+        #endif
+
+        stack->stackHash = countHash(stack, sizeof(Stack_t));
+    }
+#endif
 
 void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     if (err) *err = OK;
@@ -33,17 +43,26 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
         return;
     }
 
-    stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity + 2 * sizeof(CANARY_CONSTANT));
+    #if CANARY_PROTECT
+        stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity + 2 * sizeof(CANARY_CONSTANT));
+    #else
+        stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity);
+    #endif
+
     stack->size = 0;
     stack->capacity = capacity;
 
     if (!stack->data) {
         if (err) *err = UNABLE_TO_ALLOCATE_MEMORY;
     } else {
+        #if CANARY_PROTECT
         canaryData(&stack->data, capacity, err);
+        #endif
     }
 
+    #if HASH_PROTECT
     updateHashes(stack, err);
+    #endif
 
     ASSERT_OK(stack);
 }
@@ -61,7 +80,9 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
     stack->data[stack->size] = elem;
     stack->size++;
 
+    #if HASH_PROTECT
     updateHashes(stack, err);
+    #endif
 
     if (stack->size >= stack->capacity - 1) {
         size_t coef = (size_t)ceil((double)stack->size * RESIZE_COEFFICIENT);
@@ -87,7 +108,9 @@ Elem_t stackPop(Stack_t *stack, int *err) {
 
     size_t toLower = (size_t)(floor((double)stack->capacity / (RESIZE_COEFFICIENT * RESIZE_COEFFICIENT)));
 
+    #if HASH_PROTECT
     updateHashes(stack, err);
+    #endif
 
     if (stack->size < toLower) {
         stackResize(stack, (size_t)floor((double)stack->capacity / RESIZE_COEFFICIENT), err);
@@ -104,15 +127,25 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     }
     ASSERT_OK(stack);
 
-    stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
-    stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT), stack->size);
+    #if CANARY_PROTECT
+        stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT), stack->size);
+    #else
+        stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t), stack->size);
+    #endif
+
+
     stack->capacity = size + 1;
 
+    #if CANARY_PROTECT
     canaryData(&stack->data, stack->capacity, err);
+    #endif
 
     if (!stack->data) *err = UNABLE_TO_ALLOCATE_MEMORY;
 
+    #if HASH_PROTECT
     updateHashes(stack, err);
+    #endif
     
     ASSERT_OK(stack);
 }
@@ -130,7 +163,10 @@ void stackDtor(Stack_t *stack, int *err) {
     ASSERT_OK(stack);
 
     if (stack->data) {
-        stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        #if CANARY_PROTECT
+            stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        #endif
+
         free(stack->data);
         stack->data = nullptr;
     }
@@ -138,13 +174,17 @@ void stackDtor(Stack_t *stack, int *err) {
     stack->size = 0;
     stack->capacity = 0;
 
-    stack->createFunc = {};
-    stack->createFile = {};
-    stack->name = {};
-    stack->createLine = 0;
+    #if _DEBUG
+        stack->createFunc = {};
+        stack->createFile = {};
+        stack->name = {};
+        stack->createLine = 0;
+    #endif
 
-    stack->stackHash = 0;
-    stack->bufferHash = 0;
+    #if HASH_PROTECT
+        stack->stackHash = 0;
+        stack->bufferHash = 0;
+    #endif
 }
 
 void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err) {

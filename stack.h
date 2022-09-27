@@ -9,13 +9,23 @@
 #include <math.h>
 #include <time.h>
 
+#ifndef HASH_PROTECT
+#define HASH_PROTECT 1
+#endif
+
+#ifndef CANARY_PROTECT
+#define CANARY_PROTECT 1
+#endif
+
+#ifndef _DEBUG
+#define _DEBUG 0
+#endif
+
 typedef int Elem_t;
 
 /**
  *
- * I use this coefficient to resize stack when needed.
- * I used this link while searching info:
- * http://artem.sobolev.name/posts/2013-02-10-std-vector-growth.html
+ * I use this value to replace old values with it
  *
  **/
 const Elem_t POISON_VALUE = 2147483646;
@@ -29,19 +39,58 @@ const Elem_t POISON_VALUE = 2147483646;
  **/
 const double RESIZE_COEFFICIENT = 1.61;
 
+#if CANARY_PROTECT
+/**
+ *
+ * I use this constant for CANARY protect, i put it to the beginning of array and struct
+ *
+ **/
 const size_t CANARY_CONSTANT = 8350650019957897075;
+#endif
 
-#define ASSERT_OK(stack) {\
-    int errorCode = verifyStack(stack);\
-    \
-    if (errorCode) {\
-        FILE *file = fopen("log.txt", "a");\
-        if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
-        DUMP(stack, file, errorCode);\
-        fclose(file);\
+/**
+ *
+ * This function checks if stack OK and DUMPS stack values on error (if _DEBUG)
+ *
+ *
+ * @param stack - Stack_t structure with all needed staff for stack
+ **/
+#if _DEBUG
+
+    #define ASSERT_OK(stack) {\
+        int errorCode = verifyStack(stack);\
+        \
+        if (errorCode) {\
+            FILE *file = fopen("log.txt", "a");\
+            if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
+            \
+            DUMP(stack, file, errorCode);\
+            \
+            fclose(file);\
+        }\
     }\
-}\
 
+#else
+
+    #define ASSERT_OK(stack) {\
+        int errorCode = verifyStack(stack);\
+        \
+        if (errorCode) {\
+            if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
+        }\
+    }\
+
+#endif
+
+/**
+ *
+ * This function DUMPS all info about stack if error
+ *
+ *
+ * @param stack - Stack_t structure with all needed staff for stack
+ * @param file - pointer to file where to DUMP
+ * @param errCode - program error code
+ **/
 #define DUMP(stack, file, errCode) {\
     fprintf(file, "\nASSERTION FAILED with error code: %d\n", errCode);\
     fprintf(file, "TIMESTAMP: %lus\n", (unsigned long)time(NULL));\
@@ -76,26 +125,42 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
  *
  * Stack itself
  *
+ * @param stackCanary1 - canary constant in the beginning
  * @param data - stack values (array of them)
  * @param size - amount of values in stack (and pointer to nearest free place)
  * @param capacity - all of capacity available to data
+ * @param createFunc - name of function where stack was created
+ * @param createFile - name of file where stack was created
+ * @param name - name of stack variable
+ * @param createLine - number of line where stack was created in @createFunc
+ * @param stackHash - hash value of stack
+ * @param bufferHash - hash value of data
+ * @param stackCanary2 - canary constant in the end
 **/
 struct Stack_t {
+    #if CANARY_PROTECT
     size_t stackCanary1 = CANARY_CONSTANT;
+    #endif
 
     Elem_t *data = {};
     size_t size = 0;
     size_t capacity = 0;
 
+    #if _DEBUG
     const char *createFunc = {};
     const char *createFile = {};
     const char *name = {};
     int createLine = 0;
+    #endif
 
+    #if HASH_PROTECT
     size_t stackHash = 0;
     size_t bufferHash = 0;
+    #endif
 
+    #if CANARY_PROTECT
     size_t stackCanary2 = CANARY_CONSTANT;
+    #endif
 };
 
 /**
@@ -118,8 +183,23 @@ enum ErrorCodes {
     STACK_HASH_CHANGED          = -11,
 };
 
+/**
+ *
+ * Ads canaries to end and beginning of array data
+ *
+ * @param data - elements
+ * @param capacity - capacity of array
+ * @param err - pointer to int where error code is saved
+ **/
 void canaryData(Elem_t **data, size_t capacity, int *err = nullptr);
 
+/**
+ *
+ * Updates hashes for stack and data
+ *
+ * @param stack - pointer to stack to hash
+ * @param err - pointer to int where error code is saved
+ **/
 void updateHashes(Stack_t *stack, int *err = nullptr);
 
 /**
@@ -137,15 +217,25 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
  * Interlayer between main and _stackCtor, used for debug to get variable name
  *
  **/
-#define stackCtor(stack, ...) {\
-    if (stack) {\
-        (stack)->createFunc = __PRETTY_FUNCTION__;\
-        (stack)->createFile = __FILE_NAME__;\
-        (stack)->createLine = __LINE__;\
-        (stack)->name = #stack;\
+#if _DEBUG
+
+    #define stackCtor(stack, ...) {\
+        if (stack) {\
+            (stack)->createFunc = __PRETTY_FUNCTION__;\
+            (stack)->createFile = __FILE_NAME__;\
+            (stack)->createLine = __LINE__;\
+            (stack)->name = #stack;\
+        }\
+        _stackCtor(stack, ##__VA_ARGS__);\
     }\
-    _stackCtor(stack, ##__VA_ARGS__);\
-}\
+
+#else 
+
+    #define stackCtor(stack, ...) {\
+        _stackCtor(stack, ##__VA_ARGS__);\
+    }\
+
+#endif
 
 /**
  *
@@ -196,12 +286,46 @@ void stackShrinkToFit(Stack_t *stack, int *err = nullptr);
  **/
 void stackDtor(Stack_t *stack, int *err = nullptr);
 
+/**
+ *
+ * Checks if canaries in array are not broken
+ *
+ * @param data - array to check
+ * @param err - pointer to int where error code is saved
+ *
+ * @return int - 1 if everything ok and 0 if canary broken
+ **/
 int proveCanary(Elem_t *data, size_t capacity);
 
+/**
+ *
+ * Counts hash of a value
+ *
+ * @param ptr - pointer to value
+ * @param size - size of value in bytes
+ *
+ * @return size_t - hash value
+ **/
 size_t countHash(void *ptr, size_t size);
 
+/**
+ *
+ * Checks if array hash is not broken
+ *
+ * @param stack - pointer to stack where hash saved
+ *
+ * @return int - 1 if everything ok and 0 if canary broken
+ **/
 int checkDataHash(Stack_t *stack);
 
+/**
+ *
+ * Checks if stack hash is not broken
+ *
+ * @param stack - pointer to stack
+ *
+ * @return int - 1 if everything ok and 0 if hash broken
+ **/
 int checkStackHash(Stack_t *stack);
 
 /**
