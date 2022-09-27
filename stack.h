@@ -54,17 +54,18 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
  *
  *
  * @param stack - Stack_t structure with all needed staff for stack
+ * @param printEl - function to print element in array
  **/
 #if _DEBUG
 
-    #define ASSERT_OK(stack) {\
+    #define ASSERT_OK(stack, printEl) {\
         int errorCode = verifyStack(stack);\
         \
         if (errorCode) {\
             FILE *file = fopen("log.txt", "a");\
             if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
             \
-            DUMP(stack, file, errorCode);\
+            DUMP(stack, file, errorCode, printEl);\
             \
             fclose(file);\
         }\
@@ -72,7 +73,7 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
 
 #else
 
-    #define ASSERT_OK(stack) {\
+    #define ASSERT_OK(stack, printEl) {\
         int errorCode = verifyStack(stack);\
         \
         if (errorCode) {\
@@ -90,36 +91,38 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
  * @param stack - Stack_t structure with all needed staff for stack
  * @param file - pointer to file where to DUMP
  * @param errCode - program error code
+ * @param printEl - function to print element in array
  **/
-#define DUMP(stack, file, errCode) {\
-    fprintf(file, "\nASSERTION FAILED with error code: %d\n", errCode);\
-    fprintf(file, "TIMESTAMP: %lus\n", (unsigned long)time(NULL));\
-    fprintf(file, "in %s at %s(%d)\n", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__);\
+#define DUMP(stack, file, errCode, printEl) {\
+    mprintf(file, "\nASSERTION FAILED with error code: %d\n", errCode);\
+    mprintf(file, "TIMESTAMP: %lus\n", (unsigned long)time(NULL));\
+    mprintf(file, "in %s at %s(%d)\n", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__);\
     \
     if (stack && errCode != STACK_NULL)  {\
-        fprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", stack, (stack)->name, (stack)->createFunc, (stack)->createFile, (stack)->createLine);\
-        fprintf(file, "\tsize = %lu\n", (stack)->size);\
-        fprintf(file, "\tcapacity = %lu\n", (stack)->capacity);\
+        mprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", stack, (stack)->name, (stack)->createFunc, (stack)->createFile, (stack)->createLine);\
+        mprintf(file, "\tsize = %lu\n", (stack)->size);\
+        mprintf(file, "\tcapacity = %lu\n", (stack)->capacity);\
         \
         if ((stack)->data) {\
-            fprintf(file, "\tdata[%p]\n\t{\n", &(stack)->data);\
+            mprintf(file, "\tdata[%p]\n\t{\n", &(stack)->data);\
             \
-            fprintf(file, "\t\t%d\n", (stack)->data[-1]);\
+            mprintf(file, "\t\t%d\n", (stack)->data[-1]);\
             for (size_t i = 0; i < (stack)->size; i++) {\
                 Elem_t dumpValue = (stack)->data[i];\
-                if (dumpValue != POISON_VALUE) fprintf(file, "\t\t*[%lu] = %d\n", i, dumpValue);\
-                else fprintf(file, "\t\t[%lu] = %d\n", i, POISON_VALUE);\
+                printEl(file, i, dumpValue);\
             }\
-            fprintf(file, "\t\t%d\n", (stack)->data[(stack)->capacity]);\
+            mprintf(file, "\t\t%d\n", (stack)->data[(stack)->capacity]);\
             \
-            fprintf(file, "\t}\n}\n");\
+            mprintf(file, "\t}\n}\n");\
         }\
-        else fprintf(file, "data[0x00000000] - NULLPTR\n");\
+        else mprintf(file, "%s", "data[0x00000000] - NULLPTR\n");\
     }\
-    else fprintf(file, "Stack[0x00000000] - NULLPTR");\
+    else mprintf(file, "%s", "Stack[0x00000000] - NULLPTR");\
     \
     fflush(file);\
 }\
+
+#define getType()
 
 /**
  *
@@ -350,5 +353,25 @@ int verifyStack(Stack_t *stack);
  * @return void * - pointer to new reallocated memory
  **/
 void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err = nullptr);
+
+/**
+ *
+ * Prints values using vfprintf
+ *
+ * @param file - pointer to file
+ * @param fmt - format string
+ * @param ... - arguments to print
+ **/
+void mprintf(FILE *file, const char *fmt...);
+
+/**
+ *
+ * Prints element according to its type
+ *
+ * @param file - pointer to file
+ * @param index - index of value in array
+ * @param value - value itself
+ **/
+void printElemT(FILE *file, size_t index, Elem_t value);
 
 #endif

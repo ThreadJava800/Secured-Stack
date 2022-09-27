@@ -1,12 +1,5 @@
 #include "stack.h"
 
-
-// void test(FILE *file, char *format, ...) {
-//     va_list args;
-//     va_start(args, format);
-//     vfprintf(file, format, args);
-// }
-
 int main(void) {
     Stack_t stack = {};
     stackCtor(&stack, 4, nullptr);
@@ -17,14 +10,13 @@ int main(void) {
         stackPush(&stack, i);
     }
 
+    stack.data[3] = 7;
+
     for (int i = 0; i < 24; i++) {
         stackPop(&stack);
     }
 
     stackDtor(&stack);
-
-    // int a = 345;
-    // test(stderr, "%d %d", a, 2356);
 
     return 0;
 }

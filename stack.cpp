@@ -64,7 +64,7 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     updateHashes(stack, err);
     #endif
 
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 }
 
 
@@ -75,7 +75,7 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
         return;
     }
 
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 
     stack->data[stack->size] = elem;
     stack->size++;
@@ -100,7 +100,7 @@ Elem_t stackPop(Stack_t *stack, int *err) {
         if (err) *err = STACK_EMPTY;
         return POISON_VALUE;
     }
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 
     stack->size--;
     Elem_t value = stack->data[stack->size];
@@ -125,7 +125,7 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
         *err = STACK_NULL;
         return;
     }
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 
     #if CANARY_PROTECT
         stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
@@ -147,7 +147,7 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     updateHashes(stack, err);
     #endif
     
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 }
 
 void stackShrinkToFit(Stack_t *stack, int *err) {
@@ -160,7 +160,7 @@ void stackDtor(Stack_t *stack, int *err) {
         *err = STACK_NULL;
         return;
     }
-    ASSERT_OK(stack);
+    ASSERT_OK(stack, printElemT);
 
     if (stack->data) {
         #if CANARY_PROTECT

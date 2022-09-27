@@ -59,6 +59,21 @@ int proveCanary(Elem_t *data, size_t capacity) {
     }
 #endif
 
+void mprintf(FILE *file, const char *fmt...) {
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(file, fmt, args);
+}
+
+void printElemT(FILE *file, size_t index, Elem_t value) {
+    if (value != POISON_VALUE) {
+        mprintf(file, "\t\t*[%lu] = %d\n", index, value);
+    }
+    else {
+        mprintf(file, "\t\t[%lu] = %d\n", index, POISON_VALUE);
+    }
+}
+
 int verifyStack(Stack_t *stack) {
     if (stack == nullptr) return STACK_NULL;
     if (stack->data == nullptr) return DATA_NULL;
