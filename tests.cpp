@@ -3,8 +3,8 @@
 
 void testPushPop() {
     srand(time(NULL));
-    int testCount = 10, succeed = 0;
-    int values[10] = {};
+    int testCount = 10000, succeed = 0;
+    int values[10000] = {};
     Stack_t stack = {};
     stackCtor(&stack, 1);
 

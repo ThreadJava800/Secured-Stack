@@ -10,8 +10,6 @@ int main(void) {
         stackPush(&stack, i);
     }
 
-    stack.data[3] = 7;
-
     for (int i = 0; i < 24; i++) {
         stackPop(&stack);
     }

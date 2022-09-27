@@ -11,3 +11,5 @@ To run my program (for linux):
 > cd Secured-Stack
 
 > cmake ../Secured-stack/ && cmake --build . && ./Stack
+
+BTW, my BASED mentor is [@demqa](https://github.com/demqa)
