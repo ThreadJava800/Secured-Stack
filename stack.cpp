@@ -32,7 +32,7 @@
     }
 #endif
 
-void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
+void _stackCtor(Stack_t *stack, size_t capacity, PrintFunction func, Elem_t poisonValue, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
         *err = STACK_NULL;
@@ -43,12 +43,17 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
         return;
     }
 
+    #if _DEBUG
+        stack->debug.printFunc = func;
+    #endif
+
     #if CANARY_PROTECT
         stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity + 2 * sizeof(CANARY_CONSTANT));
     #else
         stack->data = (Elem_t *) calloc(1, sizeof(Elem_t) * capacity);
     #endif
 
+    stack->poisonValue = poisonValue;
     stack->size = 0;
     stack->capacity = capacity;
 
@@ -64,7 +69,7 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err) {
     updateHashes(stack, err);
     #endif
 
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 }
 
 
@@ -75,7 +80,7 @@ void stackPush(Stack_t *stack, Elem_t elem, int *err) {
         return;
     }
 
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 
     stack->data[stack->size] = elem;
     stack->size++;
@@ -94,17 +99,17 @@ Elem_t stackPop(Stack_t *stack, int *err) {
     if (err) *err = OK;
     if (!stack && err) {
         *err = STACK_NULL;
-        return POISON_VALUE;
+        return DEFAULT_POISON_VALUE;
     }
     if (stack->size == 0) {
         if (err) *err = STACK_EMPTY;
-        return POISON_VALUE;
+        return stack->poisonValue;
     }
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 
     stack->size--;
     Elem_t value = stack->data[stack->size];
-    stack->data[stack->size] = POISON_VALUE;
+    stack->data[stack->size] = stack->poisonValue;
 
     size_t toLower = (size_t)(floor((double)stack->capacity / (RESIZE_COEFFICIENT * RESIZE_COEFFICIENT)));
 
@@ -125,7 +130,7 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
         *err = STACK_NULL;
         return;
     }
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 
     #if CANARY_PROTECT
         stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
@@ -147,7 +152,7 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     updateHashes(stack, err);
     #endif
     
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 }
 
 void stackShrinkToFit(Stack_t *stack, int *err) {
@@ -160,7 +165,7 @@ void stackDtor(Stack_t *stack, int *err) {
         *err = STACK_NULL;
         return;
     }
-    ASSERT_OK(stack, printElemT);
+    ASSERT_OK(stack);
 
     if (stack->data) {
         #if CANARY_PROTECT
@@ -175,10 +180,11 @@ void stackDtor(Stack_t *stack, int *err) {
     stack->capacity = 0;
 
     #if _DEBUG
-        stack->createFunc = {};
-        stack->createFile = {};
-        stack->name = {};
-        stack->createLine = 0;
+        stack->debug.createFunc = nullptr;
+        stack->debug.createFile = nullptr;
+        stack->debug.name = nullptr;
+        stack->debug.createLine = 0;
+        stack->debug.printFunc = nullptr;
     #endif
 
     #if HASH_PROTECT
@@ -194,7 +200,6 @@ void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, 
     }
 
     char *newPtr = (char *) realloc(ptr, amount * elemSize);
-
     if (!newPtr) {
         if (err) {
             *err = UNABLE_TO_ALLOCATE_MEMORY;

@@ -65,13 +65,8 @@ void mprintf(FILE *file, const char *fmt...) {
     vfprintf(file, fmt, args);
 }
 
-void printElemT(FILE *file, size_t index, Elem_t value) {
-    if (value != POISON_VALUE) {
-        mprintf(file, "\t\t*[%lu] = %d\n", index, value);
-    }
-    else {
-        mprintf(file, "\t\t[%lu] = %d\n", index, POISON_VALUE);
-    }
+void printElemT(FILE *file, Elem_t value) {
+    mprintf(file, "%d", value);
 }
 
 int verifyStack(Stack_t *stack) {

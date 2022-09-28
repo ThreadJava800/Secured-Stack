@@ -25,10 +25,17 @@ typedef int Elem_t;
 
 /**
  *
+ * Annotation of function to print elements in stack
+ *
+ **/
+typedef void (*PrintFunction)(FILE *file, Elem_t value);
+
+/**
+ *
  * I use this value to replace old values with it
  *
  **/
-const Elem_t POISON_VALUE = 2147483646;
+const Elem_t DEFAULT_POISON_VALUE = 2147483646;
 
 /**
  *
@@ -45,7 +52,7 @@ const double RESIZE_COEFFICIENT = 1.61;
  * I use this constant for CANARY protect, i put it to the beginning of array and struct
  *
  **/
-const size_t CANARY_CONSTANT = 8350650019957897075;
+const size_t CANARY_CONSTANT = 8350650019957897075; // 0x1ADEB1L
 #endif
 
 /**
@@ -58,14 +65,14 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
  **/
 #if _DEBUG
 
-    #define ASSERT_OK(stack, printEl) {\
+    #define ASSERT_OK(stack) {\
         int errorCode = verifyStack(stack);\
         \
         if (errorCode) {\
             FILE *file = fopen("log.txt", "a");\
-            if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
             \
-            DUMP(stack, file, errorCode, printEl);\
+            DUMP(stack, file, errorCode, (stack)->debug.printFunc);\
+            if (errorCode == SIZE_BIGGER_CAPACITY) exit(0);\
             \
             fclose(file);\
         }\
@@ -73,7 +80,7 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
 
 #else
 
-    #define ASSERT_OK(stack, printEl) {\
+    #define ASSERT_OK(stack) {\
         int errorCode = verifyStack(stack);\
         \
         if (errorCode) {\
@@ -99,7 +106,7 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
     mprintf(file, "in %s at %s(%d)\n", __PRETTY_FUNCTION__, __FILE_NAME__, __LINE__);\
     \
     if (stack && errCode != STACK_NULL)  {\
-        mprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", stack, (stack)->name, (stack)->createFunc, (stack)->createFile, (stack)->createLine);\
+        mprintf(file, "Stack_t[%p] '%s' at %s at %s(%d)\n{\n", stack, (stack)->debug.name, (stack)->debug.createFunc, (stack)->debug.createFile, (stack)->debug.createLine);\
         mprintf(file, "\tsize = %lu\n", (stack)->size);\
         mprintf(file, "\tcapacity = %lu\n", (stack)->capacity);\
         \
@@ -109,7 +116,16 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
             mprintf(file, "\t\t%d\n", (stack)->data[-1]);\
             for (size_t i = 0; i < (stack)->size; i++) {\
                 Elem_t dumpValue = (stack)->data[i];\
-                printEl(file, i, dumpValue);\
+                    if (dumpValue != (stack)->poisonValue) {\
+                        mprintf(file, "\t\t*[%lu] = ", i);\
+                        if (printEl) printEl(file, dumpValue);\
+                        mprintf(file, "%c", '\n');\
+                    }\
+                    else {\
+                        mprintf(file, "\t\t[%lu] = ", i);\
+                        if (printEl) printEl(file, (stack)->poisonValue);\
+                        mprintf(file, "%c", '\n');\
+                    }\
             }\
             mprintf(file, "\t\t%d\n", (stack)->data[(stack)->capacity]);\
             \
@@ -124,6 +140,26 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
 
 #define getType()
 
+#if _DEBUG
+/**
+ *
+ * Contains all neccessary info for debug
+ *
+ * @param createFunc - name of function where stack was created
+ * @param createFile - name of file where stack was created
+ * @param name - name of stack variable
+ * @param createLine - number of line where stack was created in @createFunc
+ * @param printFunc - pointer to function that prints element
+ **/
+struct StackDebug {
+    const char *createFunc = nullptr; 
+    const char *createFile = nullptr; 
+    const char *name = nullptr;
+    int createLine = 0;
+    PrintFunction printFunc = nullptr;
+};
+#endif
+
 /**
  *
  * Stack itself
@@ -132,10 +168,9 @@ const size_t CANARY_CONSTANT = 8350650019957897075;
  * @param data - stack values (array of them)
  * @param size - amount of values in stack (and pointer to nearest free place)
  * @param capacity - all of capacity available to data
- * @param createFunc - name of function where stack was created
- * @param createFile - name of file where stack was created
- * @param name - name of stack variable
- * @param createLine - number of line where stack was created in @createFunc
+ * @param poisonValue - poison value for Elem_t type, may be provided with constructor
+ * @param debug - structure for debug
+ * @param capacity - all of capacity available to data
  * @param stackHash - hash value of stack
  * @param bufferHash - hash value of data
  * @param stackCanary2 - canary constant in the end
@@ -145,15 +180,13 @@ struct Stack_t {
     size_t stackCanary1 = CANARY_CONSTANT;
     #endif
 
-    Elem_t *data = {};
+    Elem_t *data = nullptr;
     size_t size = 0;
     size_t capacity = 0;
+    Elem_t poisonValue = DEFAULT_POISON_VALUE; 
 
     #if _DEBUG
-    const char *createFunc = {};
-    const char *createFile = {};
-    const char *name = {};
-    int createLine = 0;
+    StackDebug debug = {};
     #endif
 
     #if HASH_PROTECT
@@ -207,13 +240,32 @@ void updateHashes(Stack_t *stack, int *err = nullptr);
 
 /**
  *
+ * Prints values using vfprintf
+ *
+ * @param file - pointer to file
+ * @param fmt - format string
+ * @param ... - arguments to print
+ **/
+void mprintf(FILE *file, const char *fmt...);
+
+/**
+ *
+ * Prints element according to its type
+ *
+ * @param file - pointer to file
+ * @param value - value itself
+ **/
+void printElemT(FILE *file, Elem_t value);
+
+/**
+ *
  * Pushes value of Elem_t type to stack
  *
  * @param stack - pointer to stack where to push element
  * @param capacity - wanted capacity of stack
  * @param err - pointer to int where error code is saved
  **/
-void _stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
+void _stackCtor(Stack_t *stack, size_t capacity, PrintFunction func = printElemT, Elem_t poisonValue = DEFAULT_POISON_VALUE, int *err = nullptr);
 
 /**
  *
@@ -224,10 +276,10 @@ void _stackCtor(Stack_t *stack, size_t capacity, int *err = nullptr);
 
     #define stackCtor(stack, ...) {\
         if (stack) {\
-            (stack)->createFunc = __PRETTY_FUNCTION__;\
-            (stack)->createFile = __FILE_NAME__;\
-            (stack)->createLine = __LINE__;\
-            (stack)->name = #stack;\
+            (stack)->debug.createFunc = __PRETTY_FUNCTION__;\
+            (stack)->debug.createFile = __FILE_NAME__;\
+            (stack)->debug.createLine = __LINE__;\
+            (stack)->debug.name = #stack;\
         }\
         _stackCtor(stack, ##__VA_ARGS__);\
     }\
@@ -353,25 +405,5 @@ int verifyStack(Stack_t *stack);
  * @return void * - pointer to new reallocated memory
  **/
 void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err = nullptr);
-
-/**
- *
- * Prints values using vfprintf
- *
- * @param file - pointer to file
- * @param fmt - format string
- * @param ... - arguments to print
- **/
-void mprintf(FILE *file, const char *fmt...);
-
-/**
- *
- * Prints element according to its type
- *
- * @param file - pointer to file
- * @param index - index of value in array
- * @param value - value itself
- **/
-void printElemT(FILE *file, size_t index, Elem_t value);
 
 #endif
