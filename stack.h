@@ -406,4 +406,13 @@ int verifyStack(Stack_t *stack);
  **/
 void *recalloc(void *ptr, size_t amount, size_t elemSize, size_t currentAmount, int *err = nullptr);
 
+/**
+ *
+ * Just cleans log file
+ *
+ *
+ * @param fileName - name of file
+ **/
+void cleanLogFile(const char *fileName);
+
 #endif

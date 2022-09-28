@@ -80,9 +80,12 @@ int verifyStack(Stack_t *stack) {
     #endif
 
     #if HASH_PROTECT
-    if (!checkDataHash(stack)) return BUFFER_HASH_CHANGED;
     if (!checkStackHash(stack)) return STACK_HASH_CHANGED;
     #endif
 
     return OK;
+}
+
+void cleanLogFile(const char *fileName) {
+    fclose(fopen(fileName, "w"));
 }
