@@ -9,7 +9,7 @@ void testPushPop() {
     stackCtor(&stack, 1);
 
     for(int i = 0; i < testCount; i++){
-        values[i] = (rand() % POISON_VALUE) + 1;
+        values[i] = (rand() % DEFAULT_POISON_VALUE) + 1;
     }
 
     for(int i = 0; i < testCount; i++){
@@ -46,7 +46,7 @@ void testResize() {
     stackCtor(&stack, 1);
 
     for(int i = 0; i < testCount; i++){
-        values[i] = (rand() % POISON_VALUE) + 1;
+        values[i] = (rand() % DEFAULT_POISON_VALUE) + 1;
     }
 
     for(int i = 0; i < testCount; i++){

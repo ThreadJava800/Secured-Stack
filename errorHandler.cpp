@@ -38,7 +38,7 @@ int proveCanary(Elem_t *data, size_t capacity) {
         size_t oldHash = stack->bufferHash;
 
         #if CANARY_PROTECT
-            size_t newHash = countHash(stack->data - sizeof(CANARY_CONSTANT) / sizeof(Elem_t), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
+            size_t newHash = countHash(((char *)stack->data) - sizeof(CANARY_CONSTANT), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
         #else
             size_t newHash = countHash(stack->data, stack->capacity * sizeof(Elem_t));
         #endif

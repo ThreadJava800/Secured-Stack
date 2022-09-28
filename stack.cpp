@@ -8,7 +8,7 @@
 
         char *temp = (char *) *data;
         *data = (Elem_t*) memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
-        *data += sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        *data = (Elem_t*) (temp + sizeof(CANARY_CONSTANT));
 
         temp += capacity * sizeof(Elem_t) + sizeof(CANARY_CONSTANT);
         memcpy(temp, &CANARY_CONSTANT, sizeof(CANARY_CONSTANT));
@@ -23,7 +23,7 @@
         stack->stackHash = 0;
 
         #if CANARY_PROTECT
-            stack->bufferHash = countHash(stack->data - sizeof(CANARY_CONSTANT) / sizeof(Elem_t), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
+            stack->bufferHash = countHash(((char *)stack->data) - sizeof(CANARY_CONSTANT), stack->capacity * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT));
         #else
             stack->bufferHash = countHash(stack->data, stack->capacity * sizeof(Elem_t));
         #endif
@@ -133,7 +133,8 @@ void stackResize(Stack_t *stack, size_t size, int *err) {
     ASSERT_OK(stack);
 
     #if CANARY_PROTECT
-        stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+        char *temp = (char *) stack->data;
+        stack->data = (Elem_t *) (temp - sizeof(CANARY_CONSTANT));
         stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t) + 2 * sizeof(CANARY_CONSTANT), stack->size);
     #else
         stack->data = (Elem_t *) recalloc(stack->data, 1, (size + 1) * sizeof(Elem_t), stack->size);
@@ -169,7 +170,7 @@ void stackDtor(Stack_t *stack, int *err) {
 
     if (stack->data) {
         #if CANARY_PROTECT
-            stack->data -= sizeof(CANARY_CONSTANT) / sizeof(Elem_t);
+            stack->data = (Elem_t *)(((char *)stack->data) - sizeof(CANARY_CONSTANT));
         #endif
 
         free(stack->data);
